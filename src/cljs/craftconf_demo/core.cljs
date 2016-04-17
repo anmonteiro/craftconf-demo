@@ -17,14 +17,44 @@
 (enable-console-print!)
 
 (defmulti read om/dispatch)
+(defmulti mutate om/dispatch)
 
 (defmethod read :remote/data
   [{:keys [query state target]} k params]
-  (println "get st k" )
+  ;; For demo purposes, always throw away what we have in the app state before
+  ;; making the remote call
+  (when-not (nil? target)
+    (swap! state dissoc k))
   {:value (get @state k)
    :remote true})
 
-(defmulti mutate om/dispatch)
+(defmethod read :speaker/list
+  [{:keys [query state target]} k params]
+  (let [st @state]
+    (if (contains? st k)
+      {:value (om/db->tree query (get st k) st)}
+      {:remote true})))
+
+(defmethod read :favorites/list
+  [{:keys [query state target]} k params]
+  (let [st @state]
+    (if (contains? st k)
+      {:value (om/db->tree query (get st k) st)}
+      {:remote true})))
+
+(defmethod mutate 'favorite/inc!
+  [{:keys [state ref] :as env} _ _]
+  ;; OPTIMISTIC UPDATE
+  {:action
+   (fn []
+     (swap! state
+       (fn [st]
+         (let [talk-ident (get-in st (conj ref :speaker/talk))]
+           (-> st
+             (update-in (conj talk-ident :talk/favorites) inc)
+             (update-in [:favorites/list]
+               #(cond-> %
+                  (not (some #{ref} %)) (conj ref))))))))})
 
 (defn str->query [query-str]
   (try
@@ -72,7 +102,6 @@
 (defn handle-run-query-click! [c]
   (let [cm (om/get-state c :cm)
         query (.getValue cm)]
-    (println "hi" query)
     (om/set-query! c {:params {:user-query (str->query query)}})))
 
 (defui QueryEditor
@@ -92,7 +121,6 @@
   (render [this]
     (let [props (om/props this)
           local (om/get-state this)]
-      (println "props" props)
       (dom/div #js {:width "600px"}
         (dom/p nil)
         (dom/div #js {:id "query-editor"})
@@ -102,15 +130,89 @@
         (dom/hr nil)
         (devcard "Run query result" "" (:remote/data props) {:heading false})))))
 
-(def init-state
-  {:query-result {}})
-
 (def reconciler
-  (om/reconciler {:state init-state
+  (om/reconciler {:state {}             ;init-state
                   :parser (om/parser {:read read
                                       :mutate mutate})
                   :send (utils/transit-post "/api")}))
 
-(dev/add-css-if-necessary!)
-(om/add-root! reconciler QueryEditor (gdom/getElement "app"))
+;; =============================================================================
 
+(defui Talk
+  static om/Ident
+  (ident [this {:keys [db/id]}]
+    [:talk/by-id id])
+  static om/IQuery
+  (query [this]
+    [:db/id :talk/title :talk/duration :talk/favorites])
+  Object
+  (render [this]
+    (let [{:keys [talk/title talk/duration talk/favorites]} (om/props this)
+          fav-inc (om/get-computed this :handle-fav-click)]
+      (dom/div nil
+        (dom/p nil title)
+        (dom/p nil (str "Duration: " duration " minutes."))
+        (dom/p nil (str "Favorites: " favorites))
+        (dom/button #js {:onClick fav-inc} "Favorite!")))))
+
+(def talk-view (om/factory Talk))
+
+(defui Speaker
+  static om/Ident
+  (ident [this {:keys [db/id]}]
+    [:speaker/by-id id])
+  static om/IQuery
+  (query [this]
+    [:db/id :speaker/name :speaker/age {:speaker/talk (om/get-query Talk)}])
+  Object
+  (render [this]
+    (let [{:keys [speaker/name speaker/age speaker/talk]} (om/props this)]
+      (dom/li nil
+        (dom/p nil (str name ", " age " years old."))
+        (talk-view (om/computed talk {:handle-fav-click #(om/transact! this '[(favorite/inc!) :favorites/list])}))))))
+
+(def speaker (om/factory Speaker {:keyfn :db/id}))
+
+(defui ListView
+  Object
+  (render [this]
+    (dom/div nil
+      (dom/ul nil
+        (map speaker (om/props this))))))
+
+(def list-view (om/factory ListView))
+
+(defui RootView
+  static om/IQuery
+  (query [this]
+    [{:speaker/list (om/get-query Speaker)}
+     {:favorites/list (om/get-query Speaker)}])
+  Object
+  (render [this]
+    (let [{speakers :speaker/list favorites :favorites/list} (om/props this)]
+      (dom/div #js {:style #js {:display "table"
+                                :marginLeft "50px"
+                                :fontFamily "Helvetica"}}
+        (dom/div #js {:style #js {:width "300px"
+                                  :display "table-cell"
+                                  :borderRight "black 1px solid"}}
+          (dom/h2 nil "Speakers")
+          (list-view speakers))
+        (dom/div #js {:style #js {:width "350px"
+                                  :display "table-cell"
+                                  :paddingLeft "30px"}}
+          (dom/h2 nil "Favorites")
+          (list-view favorites))))))
+
+(defn setup-app! []
+  (let [target (gdom/getElement "app")
+        location (.. js/window -location -pathname)]
+    (case location
+      ("/" "/index.html")
+      (do (dev/add-css-if-necessary!)
+          (om/add-root! reconciler QueryEditor target))
+
+      "/app.html"
+      (om/add-root! reconciler RootView target))))
+
+(setup-app!)

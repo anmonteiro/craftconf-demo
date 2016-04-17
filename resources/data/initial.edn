@@ -6,7 +6,7 @@
  {:db/id #db/id[:db.part/user -2]
   :talk/title "Building X in 30 minutes"
   :talk/duration 30
-  :talk/favorites 0}
+  :talk/favorites 1}
  
  {:db/id #db/id[:db.part/user -3]
   :speaker/name "Bob Smith"
