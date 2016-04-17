@@ -1,0 +1,41 @@
+[{:db/id #db/id[:db.part/db]
+  :db/ident :speaker/name
+  :db/valueType :db.type/string
+  :db/cardinality :db.cardinality/one
+  :db/doc "A person's name"
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :speaker/age
+  :db/valueType :db.type/long
+  :db/cardinality :db.cardinality/one
+  :db/doc "A speaker's age"
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :speaker/talk
+  :db/valueType :db.type/ref
+  :db/cardinality :db.cardinality/one
+  :db/doc "A speaker's talk information"
+  :db.install/_attribute :db.part/db}
+ 
+ {:db/id #db/id[:db.part/db]
+  :db/ident :talk/title
+  :db/valueType :db.type/string
+  :db/cardinality :db.cardinality/one
+  :db/doc "A conference talk's title"
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :talk/duration
+  :db/valueType :db.type/long
+  :db/cardinality :db.cardinality/one
+  :db/doc "A talk's duration in minutes"
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :talk/favorites
+  :db/valueType :db.type/long
+  :db/cardinality :db.cardinality/one
+  :db/doc "Number of times talk has been favorited"
+  :db.install/_attribute :db.part/db}]
