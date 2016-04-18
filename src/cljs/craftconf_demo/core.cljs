@@ -42,19 +42,20 @@
       {:value (om/db->tree query (get st k) st)}
       {:remote true})))
 
+(defn favorite-talk [state speaker-id]
+  (let [talk-ident (get-in state (conj speaker-id :speaker/talk))]
+    (-> state
+      (update-in (conj talk-ident :talk/favorites) inc)
+      #_(update-in [:favorites/list]
+        #(cond-> %
+           (not (some #{speaker-id} %)) (conj speaker-id))))))
+
 (defmethod mutate 'favorite/inc!
   [{:keys [state ref] :as env} _ _]
   ;; OPTIMISTIC UPDATE
   {:action
    (fn []
-     (swap! state
-       (fn [st]
-         (let [talk-ident (get-in st (conj ref :speaker/talk))]
-           (-> st
-             (update-in (conj talk-ident :talk/favorites) inc)
-             (update-in [:favorites/list]
-               #(cond-> %
-                  (not (some #{ref} %)) (conj ref))))))))})
+     (swap! state favorite-talk ref))})
 
 (defn str->query [query-str]
   (try
