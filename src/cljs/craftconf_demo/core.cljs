@@ -122,14 +122,24 @@
   (render [this]
     (let [props (om/props this)
           local (om/get-state this)]
-      (dom/div #js {:width "600px"}
-        (dom/p nil)
-        (dom/div #js {:id "query-editor"})
-        (dom/button #js {:style #js {:fontSize "20px"
-                                     :marginLeft "20px"}
-                         :onClick (partial handle-run-query-click! this)} "Run Query")
-        (dom/hr nil)
-        (devcard "Run query result" "" (:remote/data props) {:heading false})))))
+      (dom/div nil ;#js {:style #js {:display "table"}}
+        (dom/div #js {:style #js {:display "inline-block"
+                                  :verticalAlign "top"
+                                  :width "50%"
+                                  ;:paddingRight "20px"
+                                  }}
+          (dom/p nil)
+          (dom/div #js {:id "query-editor"})
+          (dom/button #js {:style #js {:fontSize "20px"
+                                       :marginLeft "20px"}
+                           :onClick (partial handle-run-query-click! this)} "Run Query"))
+        (dom/div #js {:style #js {:display "inline-block"
+                                  :verticalAlign "top"
+                                  :width "50%"
+                                  ;:borderLeft "black 2px solid"
+                                  ;:paddingLeft "20px"
+                                  }}
+          (devcard "Run query result" "" (:remote/data props) {:heading false}))))))
 
 (def reconciler
   (om/reconciler {:state {}             ;init-state
