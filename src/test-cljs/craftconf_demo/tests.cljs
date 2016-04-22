@@ -46,10 +46,15 @@
     (fn [[tx ref]]
       (let [parser (om/parser {:read demo/read :mutate demo/mutate})
             state  (atom (om/tree->db demo/RootView sample-data true))]
-                                        ;(println "hi")
         (parser {:state state
                  :ref   ref} tx)
         (let [ui (parser {:state state} (om/get-query demo/RootView))]
           (if-not (empty? tx)
             (in-favs-list? (:favorites/list ui) ref)
             true))))))
+
+(comment
+  (require '[craftconf-demo.tests])
+  (gen/sample gen-tx-fav-talk 10)
+  (tc/quick-check 10 (prop-adds-to-favorites))
+  )
