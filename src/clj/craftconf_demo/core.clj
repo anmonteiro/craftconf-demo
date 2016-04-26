@@ -25,7 +25,8 @@
     sys'))
 
 (comment
-
+  (require '[craftconf-demo.core :as cc])
+  (cc/dev-start)
   (:connection (:db @cc/servlet-system))
 
 

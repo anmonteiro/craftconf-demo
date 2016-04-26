@@ -108,8 +108,7 @@
 (defui QueryEditor
   static om/IQueryParams
   (params [this]
-    {:user-query [:speaker/name :speaker/age
-                  {:speaker/talk [:talk/title :talk/duration]}]})
+    {:user-query [:speaker/name :speaker/age :speaker/talk]})
   static om/IQuery
   (query [this]
     '[{:remote/data ?user-query}])
